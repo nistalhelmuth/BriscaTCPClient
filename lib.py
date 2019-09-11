@@ -15,6 +15,7 @@ class Message:
         self._send_buffer = b""
         self._request_queued = False
         self._jsonheader_len = None
+        self.jsonheader = None
         self.response = None
     
     def _set_selector_events_mask(self, mode):
@@ -74,6 +75,11 @@ class Message:
         message = message_hdr + jsonheader_bytes + content_bytes
         return message
     
+    def _process_response_json_content(self):
+        content = self.response
+        result = content.get("result")
+        print(f"got result: {result}")
+    
     def process_events(self, mask):
         if mask & selectors.EVENT_READ:
             self.read()
@@ -104,6 +110,27 @@ class Message:
             if not self._send_buffer:
                 # Set selector to listen for read events, we're done writing.
                 self._set_selector_events_mask("r")
+            
+    def close(self):
+        print("closing connection to", self.addr)
+        try:
+            self.selector.unregister(self.sock)
+        except Exception as e:
+            print(
+                f"error: selector.unregister() exception for",
+                f"{self.addr}: {repr(e)}",
+            )
+
+        try:
+            self.sock.close()
+        except OSError as e:
+            print(
+                f"error: socket.close() exception for",
+                f"{self.addr}: {repr(e)}",
+            )
+        finally:
+            # Delete reference to socket object for garbage collection
+            self.sock = None
     
     def queue_request(self):
         content = self.request["content"]
@@ -138,4 +165,6 @@ class Message:
         self._recv_buffer = self._recv_buffer[content_len:]
         self.response = self._json_decode(data)
         print("received response", repr(self.response), "from", self.addr)
-        #limpiar flags
+        
+        self._process_response_json_content()
+        self.close()

@@ -21,8 +21,13 @@ class Message:
     def _set_selector_events_mask(self, mode):
         """Set selector to listen for events: mode is 'r', 'w', or 'rw'."""
         if mode == "r":
+            self._jsonheader_len = None
+            self.jsonheader = None
+            self.response = None
             events = selectors.EVENT_READ
         elif mode == "w":
+            self._request_queued = False
+            self._send_buffer = b""
             events = selectors.EVENT_WRITE
         elif mode == "rw":
             events = selectors.EVENT_READ | selectors.EVENT_WRITE
@@ -167,4 +172,5 @@ class Message:
         print("received response", repr(self.response), "from", self.addr)
         
         self._process_response_json_content()
-        self.close()
+        self._set_selector_events_mask("w")
+        #self.close()

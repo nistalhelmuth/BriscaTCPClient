@@ -42,6 +42,7 @@ try:
         for key, mask in events:
             message = key.data
             try:
+                print("mask:",mask)
                 message.process_events(mask)
             except Exception:
                 print(

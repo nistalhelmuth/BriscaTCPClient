@@ -5,12 +5,11 @@ import io
 import struct
 
 
-class Message:
-    def __init__(self, selector, sock, addr, request):
+class SocketHandler:
+    def __init__(self, selector, sock, addr):
         self.selector = selector
         self.sock = sock
         self.addr = addr
-        self.request = request
         self._recv_buffer = b""
         self._send_buffer = b""
         self._request_queued = False
@@ -80,17 +79,6 @@ class Message:
         message = message_hdr + jsonheader_bytes + content_bytes
         return message
     
-    def _process_response_json_content(self):
-        content = self.response
-        result = content.get("result")
-        print(f"got result: {result}")
-    
-    def process_events(self, mask):
-        if mask & selectors.EVENT_READ:
-            self.read()
-        if mask & selectors.EVENT_WRITE:
-            self.write()
-    
     def read(self):
         self._read()
 
@@ -105,9 +93,9 @@ class Message:
             if self.response is None:
                 self.process_response()
 
-    def write(self):
+    def write(self, content):
         if not self._request_queued:
-            self.queue_request()
+            self.queue_request(content)
 
         self._write()
 
@@ -137,8 +125,7 @@ class Message:
             # Delete reference to socket object for garbage collection
             self.sock = None
     
-    def queue_request(self):
-        content = self.request["content"]
+    def queue_request(self, content):
         req = {
             "content_bytes": self._json_encode(content),
         }
@@ -171,6 +158,4 @@ class Message:
         self.response = self._json_decode(data)
         print("received response", repr(self.response), "from", self.addr)
         
-        self._process_response_json_content()
         self._set_selector_events_mask("w")
-        #self.close()

@@ -2,6 +2,7 @@ import sys
 import socket
 import selectors
 import traceback
+import argparse
 
 import lib
 
@@ -18,24 +19,56 @@ class Client:
         self.sel.register(self.sock, self.events, data=self.socket)
         self.username = username
         self.auth = False
-    
-    def create_request(self, action, value):
-        return dict(
-            content=dict(action=action, value=value),
-        )
 
     def evaluate_request(self, socket):
         if not self.auth:
-            content = {"action": "login", "value": self.username}
+            content = {"action": "login", "user": self.username}
         else:
-            input("decime que hacer")
+            print("TEST MENU")
+            print("1. get_rooms")
+            print("2. create_room")
+            print("3. join_room")
+            print("4. get_players")
+            print("5. disconnect")
+            option = input()
+            if option == "1":
+                content = {"action": "get_rooms", "user": self.username}
+            elif option == "2":
+                content = {"action": "create_room", "user": self.username, "room":"new room"}
+            elif option == "3":
+                content = {"action": "join_room", "user": self.username, "room":"new room"}
+            elif option == "4":
+                content = {"action": "get_players", "user": self.username}
+            elif option == "5":
+                content = {"action": "disconnect", "user": self.username}
+
         socket.write(content)
     
     def evaluate_response(self, socket):
         response = socket.response 
         socket.response = None
-        if response.get("status") == "ok":
+        status = response.get("status")
+        if status == "error":
+            print("ERROR: ", response.get("message"))
+            if not self.auth:
+                print("connection closed")
+                socket.close()
+        elif status == "login":
+            print("Current players:", response.get("players"))
+            print("Current rooms:", response.get("rooms"))
             self.auth = True
+        elif status == "get_rooms":
+            print("Current rooms:", response.get("rooms"))
+        elif status == "create_room":
+            print("Current rooms:", reponse.get("rooms"))
+        elif status == "join_room":
+            print("Current players in ", response.get("room"))
+            print(response.get("players_in_room"))
+        elif status == "get_players":
+            print("Current players:", response.get("players"))
+        elif status == "disconnect":
+            print("connection disconnected")
+            socket.close()
 
     def start(self):
         try:
@@ -64,9 +97,18 @@ class Client:
         finally:
             self.sel.close()
 
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='XMPP client.')
+    parser.add_argument('-u', dest='user', help='user to use')
 
-client = Client()
-client.start()
+    args = parser.parse_args()
+
+    if args.user is None:
+        client = Client()
+        client.start()
+    else:
+        client = Client(username=args.user)
+        client.start()
 
 
 

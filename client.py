@@ -35,7 +35,9 @@ class Client:
             print("2. create_room")
             print("3. join_room")
             print("4. get_players")
-            print("5. disconnect")
+            print("5. message_to_room")
+            print("6. message_to_player")
+            print("7. disconnect")
             option = input()
             if option == "1":
                 content = {"action": "get_rooms", "user": self.username}
@@ -46,6 +48,10 @@ class Client:
             elif option == "4":
                 content = {"action": "get_players", "user": self.username}
             elif option == "5":
+                content = {"action": "message_to_room", "user": self.username, "room":"new room", "message": "el mensaje"}
+            elif option == "6":
+                content = {"action": "message_to_player", "user": self.username, "to":'morpheus', "message": "el mensaje"}
+            elif option == "7":
                 content = {"action": "disconnect", "user": self.username}
             socket.write(content)
 
@@ -80,6 +86,19 @@ class Client:
             print(response.get("players_in_room"))
         elif status == "get_players":
             print("Current players:", response.get("players"))
+        elif status == "message_to_room_sent":
+            print("Message sent to room:", response.get("room"))
+            print("Message:", response.get("message"))
+        elif status == "message_to_player_sent":
+            print("Message sent to player:", response.get("player"))
+            print("Message:", response.get("message"))
+        elif status == "message_to_room":
+            print("Message recieve in room:", response.get("room"))
+            print("from player:", response.get("from"))
+            print("Message:", response.get("message"))
+        elif status == "message_to_player":
+            print("Message recieve from:", response.get("from"))
+            print("Message:", response.get("message"))
         elif status == "disconnect":
             print("connection disconnected")
             self.auth = -1
@@ -112,7 +131,6 @@ class Client:
     def start(self):
         write_thread = threading.Thread(target=self.write_handler)
         write_thread.start()
-        socket.close()
         
         try:
             while True:

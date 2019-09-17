@@ -3,6 +3,7 @@ import socket
 import selectors
 import traceback
 import argparse
+import threading
 
 import lib
 
@@ -18,12 +19,17 @@ class Client:
         self.socket = lib.SocketHandler(self.sel, self.sock, self.addr)
         self.sel.register(self.sock, self.events, data=self.socket)
         self.username = username
-        self.auth = False
+        self.auth = 0 #0:waiting 1:sent 2:auth -1:failed
+        self.stop = False
 
     def evaluate_request(self, socket):
-        if not self.auth:
+        #print("request", self.auth)
+        #input()
+        if self.auth == 0:
             content = {"action": "login", "user": self.username}
-        else:
+            socket.write(content)
+            self.auth = 1
+        elif self.auth == 2:
             print("TEST MENU")
             print("1. get_rooms")
             print("2. create_room")
@@ -41,22 +47,30 @@ class Client:
                 content = {"action": "get_players", "user": self.username}
             elif option == "5":
                 content = {"action": "disconnect", "user": self.username}
+            socket.write(content)
 
-        socket.write(content)
+                #content = {"action": "create_room", "user": self.username, "room":"new room"}
+        
+
+                #content = {"action": "join_room", "user": self.username, "room":"new room"}
+                #socket.write(content)
+                #self.stop = True
+                #input()
     
     def evaluate_response(self, socket):
         response = socket.response 
-        socket.response = None
+
         status = response.get("status")
         if status == "error":
             print("ERROR: ", response.get("message"))
             if not self.auth:
                 print("connection closed")
+                self.auth = -1
                 socket.close()
         elif status == "login":
             print("Current players:", response.get("players"))
             print("Current rooms:", response.get("rooms"))
-            self.auth = True
+            self.auth = 2
         elif status == "get_rooms":
             print("Current rooms:", response.get("rooms"))
         elif status == "create_room":
@@ -68,21 +82,50 @@ class Client:
             print("Current players:", response.get("players"))
         elif status == "disconnect":
             print("connection disconnected")
+            self.auth = -1
             socket.close()
 
-    def start(self):
+
+    def write_handler(self):
         try:
             while True:
                 events = self.sel.select(timeout=1)
                 for key, mask in events:
                     socket = key.data
                     try:
-                        if mask & selectors.EVENT_WRITE:
+                        if mask == selectors.EVENT_WRITE:
                             self.evaluate_request(socket)
+                    except Exception:
+                            print(
+                                "main: error: exception for",
+                                f"{socket.addr}:\n{traceback.format_exc()}",
+                            )
+                            socket.close()
+                    # Check for a socket being monitored to continue.
+                    if not self.sel.get_map():
+                        break
+        except KeyboardInterrupt:
+            print("caught keyboard interrupt, exiting")
+        finally:
+            self.sel.close()
+
+    def start(self):
+        write_thread = threading.Thread(target=self.write_handler)
+        write_thread.start()
+        socket.close()
+        
+        try:
+            while True:
+                events = self.sel.select(timeout=1)
+                
+                for key, mask in events:
+                    socket = key.data
+                    try:
                         if mask & selectors.EVENT_READ:
                             socket.read()
                             if socket.response is not None:
                                 self.evaluate_response(socket)
+                                socket.response = None
                     except Exception:
                         print(
                             "main: error: exception for",

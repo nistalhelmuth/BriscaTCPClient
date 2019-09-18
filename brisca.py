@@ -1,4 +1,5 @@
 import pygame
+import argparse
 import time
 import components.screens as screens
 from threading import Thread
@@ -9,7 +10,7 @@ from client import Client
 
 
 class Brisca:
-    def __init__(self):
+    def __init__(self, host):
         self.running = True
         self.display_surf = None
         self.size = self.width, self.height = 1280, 720
@@ -17,6 +18,7 @@ class Brisca:
         self.client = None
         self.client_thread = None
         self.temp = True
+        self.host = host
 
     def on_init(self):
         pygame.init()
@@ -66,11 +68,17 @@ class Brisca:
 
     def login(self):
         username = self.screen.input.text
-        self.client = Client(username=username)
-        self.client.login(self.client.socket)
+        self.client = Client(username=username, host=self.host)
         self.client_thread = Thread(
             target=self.client.start, args=(self.update_state,))
         self.client_thread.start()
+        events = self.client.sel.select(timeout=1)
+        try:
+            key, mask = events[0]
+            socket = key.data
+            self.client.login(socket)
+        except:
+            pass
 
     def update_state(self, socket):
         response = socket.response
@@ -137,5 +145,14 @@ class Brisca:
 
 
 if __name__ == "__main__":
-    app = Brisca()
-    app.on_execute()
+    parser = argparse.ArgumentParser(description='Brisca host.')
+    parser.add_argument('-d', dest='host', help='user to use')
+
+    args = parser.parse_args()
+
+    if args.host is None:
+        app = Brisca(host='127.0.0.1')
+        app.on_execute()
+    else:
+        app = Brisca(host=args.host)
+        app.on_execute()

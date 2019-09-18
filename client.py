@@ -9,7 +9,7 @@ import lib
 
 
 class Client:
-    def __init__(self, host='127.0.0.1', port=3000, username='morpheus'):
+    def __init__(self, host='192.168.1.100', port=3000, username='morpheus'):
         self.sel = selectors.DefaultSelector()
         self.addr = (host, port)
         print("starting connection to", self.addr)

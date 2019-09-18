@@ -1,4 +1,5 @@
 import pygame
+import time
 import components.screens as screens
 from threading import Thread
 from pygame.locals import *
@@ -15,6 +16,7 @@ class Brisca:
         self.screen = None
         self.client = None
         self.client_thread = None
+        self.temp = True
 
     def on_init(self):
         pygame.init()
@@ -52,6 +54,14 @@ class Brisca:
                 self.on_event(event)
             self.on_loop()
             self.on_render()
+            if self.temp:
+                time.sleep(2)
+
+            #     cards = ['hearts_2', 'spades_7', 'clubs_11']
+            #     for index, card in enumerate(cards):
+            #         self.screen.player_boards[0].player = 'gadhi'
+            #         self.screen.add_card(card + '.png', 'gadhi', index)
+                self.temp = False
         self.on_cleanup()
 
     def login(self):
@@ -78,6 +88,7 @@ class Brisca:
             self.screen = screens.GamingBoard(self.client)
             self.screen.player_boards[0].player = self.client.username
             self.screen.player_boards[0].label.text = self.client.username
+            self.screen.room = response.get('room')
             players_in_room = response.get('players_in_room')
             if len(players_in_room) > 1:
                 m_idx = -(len(players_in_room) + 1)
@@ -93,6 +104,33 @@ class Brisca:
                         board.player = new_player
                         board.label.text = new_player
                         break
+        elif status == 'room_ready':
+            player_turn = response.get('player')
+            cards = response.get('cards')
+            triunf = response.get('triunf')
+            self.screen.main_board.turn.text = player_turn
+            self.screen.main_board.update_triunf(triunf)
+            for index, card in enumerate(cards):
+                self.screen.add_card(
+                    card + '.png', self.client.username, index)
+        elif status == 'player_picked_card':
+            player_that_picked = response.get('picked')
+            next_turn = response.get('next_player')
+            self.screen.main_board.turn.text = next_turn
+            if player_that_picked != self.client.username:
+                card = response.get('card')
+                self.screen.add_card(card + '.png', player_that_picked)
+        elif status == 'round_finished':
+            winner = response.get('winner')
+            next_card = response.get('next_card')[0]
+            self.screen.add_card(
+                next_card + '.png', self.client.username, self.screen.last_picked_index)
+            target_board = list(
+                filter(lambda x: x.player == winner, self.screen.player_boards))[0]
+            for player_board in self.screen.player_boards:
+                player_board.selected_card.target_pos = target_board.winns.rect.center
+            self.screen.main_board.turn.text = winner
+
         elif status == 'disconnect':
             socket.close()
             self.running = False

@@ -4,6 +4,7 @@ from pygame.sprite import RenderPlain, Rect
 from utils.loaders import load_image
 from .boards import MainBoard, PlayerBoard, PBoardSide
 from .ui import Button, Label, TextInput, UIList
+from .card import Card
 
 
 class Screen(RenderPlain):
@@ -111,10 +112,32 @@ class GamingBoard(Screen):
                               PlayerBoard(self.main_board.rect, PBoardSide.LEFT))
         self.add(self.main_board)
         self.add(self.player_boards)
+        self.room = ''
+        self.last_picked_index = 0
+
+    def add_card(self, card, player, position=None):
+        player_board = list(filter(lambda x: x.player ==
+                                   player, self.player_boards))[0]
+        rotation = None
+        if player_board.board_position in (PBoardSide.LEFT, PBoardSide.RIGHT):
+            rotation = 90
+        card = Card(card, rotation)
+        card.rect.center = self.main_board.deck.cards[3].rect.center
+        if position is not None:
+            card.target_pos = player_board.cards[position].rect.center
+            self.player_boards[self.player_boards.index(
+                player_board)].cards[position] = card
+        else:
+            card.target_pos = player_board.selected_card.rect.center
+        self.add(card)
 
     def on_event(self, event):
+        Screen.on_event(self, event)
         if event.type == MOUSEBUTTONDOWN:
-            for card in self.player_boards[0].cards:
-                if card.rect.collidepoint(event.pos):
+            for index, card in enumerate(self.player_boards[0].cards):
+                if card.rect.collidepoint(event.pos) and self.main_board.turn.text == self.client.username:
                     card.target_pos = self.player_boards[0].selected_card.rect.center
+                    self.last_picked_index = index
+                    self.client.card_pick(
+                        self.client.socket, card.name, self.room)
                     return

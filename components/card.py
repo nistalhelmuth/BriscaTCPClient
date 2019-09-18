@@ -10,6 +10,7 @@ class Card(Sprite):
 
     def __init__(self, card_name, rotation=None, colorkey=None):
         Sprite.__init__(self)
+        self.name = card_name[:-4]
         self.image, self.rect = load_image(card_name, colorkey)
         if rotation is not None:
             self.image = transform.rotate(self.image, rotation)
@@ -21,7 +22,7 @@ class Card(Sprite):
         if self.target_pos is None:
             return
 
-        speed = 30
+        speed = 20
         dir_x, dir_y = (1, 1)
         if self.target_pos[0] < self.rect.centerx:
             dir_x = -1

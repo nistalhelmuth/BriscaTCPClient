@@ -9,9 +9,22 @@ class Label(Sprite):
     def __init__(self, text, size, text_color, background_color=None):
         Sprite.__init__(self)
         self.text = text
+        self.previous_text = text
+        self.size = size
+        self.text_color = text_color
+        self.background_color = background_color
         self.image = Font(FONT, size).render(
             text, True, text_color, background_color)
         self.rect = self.image.get_rect()
+
+    def update(self, *args):
+        if self.previous_text != self.text:
+            self.image = Font(FONT, self.size).render(
+                self.text, True, self.text_color, self.background_color)
+            previous_center = self.rect.center
+            self.rect = self.image.get_rect()
+            self.rect.center = previous_center
+            self.previous_text = self.text
 
 
 class Button(Label):

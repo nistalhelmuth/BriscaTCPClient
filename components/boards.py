@@ -4,6 +4,7 @@ from pygame import Rect
 from pygame.sprite import RenderPlain
 from .card import Card
 from .deck import Deck
+from .ui import Label
 
 
 class PBoardSide(Enum):
@@ -51,6 +52,8 @@ class PlayerBoard(RenderPlain):
     def __init__(self, main_board_rect, board_position=PBoardSide.BOTTOM):
         RenderPlain.__init__(self)
         self.board_position = board_position
+        self.can_play = False
+        self.player = '(Empty)'
 
         display_surf = display.get_surface()
         d_width = display_surf.get_width()
@@ -79,7 +82,7 @@ class PlayerBoard(RenderPlain):
 
         self.cards = []
         for i in range(-1, 2):
-            card = Card('clubs_1.png', card_rotation)
+            card = Card('back_red.png', card_rotation)
             if board_position in (PBoardSide.LEFT, PBoardSide.RIGHT):
                 card.rect.centerx = self.rect.centerx
                 card.rect.centery = int(
@@ -91,6 +94,27 @@ class PlayerBoard(RenderPlain):
             self.add(card)
             self.cards.append(card)
 
-        self.selected_card = Card('empty.png', card_rotation)
-        self.selected_card.rect.center = (self.rect.centerx, self.rect.top)
+        self.selected_card = Card('empty.png', card_rotation, -1)
+        if board_position == PBoardSide.BOTTOM:
+            self.selected_card.rect.centerx = main_board_rect.centerx
+            self.selected_card.rect.bottom = main_board_rect.bottom - 5
+        elif board_position == PBoardSide.TOP:
+            self.selected_card.rect.centerx = main_board_rect.centerx
+            self.selected_card.rect.top = main_board_rect.top + 5
+        elif board_position == PBoardSide.LEFT:
+            self.selected_card.rect.centery = main_board_rect.centery
+            self.selected_card.rect.left = main_board_rect.left + 5
+        elif board_position == PBoardSide.RIGHT:
+            self.selected_card.rect.centery = main_board_rect.centery
+            self.selected_card.rect.right = main_board_rect.right - 5
         self.add(self.selected_card)
+
+        self.label = Label(self.player, 20, [0, 0, 0])
+        self.label.rect.centerx = self.rect.centerx
+        if board_position == PBoardSide.BOTTOM:
+            self.label.rect.bottom = self.rect.bottom - 5
+        elif board_position == PBoardSide.TOP:
+            self.label.rect.bottom = self.rect.top + 20
+        else:
+            self.label.rect.bottom = self.rect.top - 30
+        self.add(self.label)

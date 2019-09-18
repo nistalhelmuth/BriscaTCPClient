@@ -22,6 +22,7 @@ class Brisca:
             self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
         self.running = True
         self.screen = screens.Login(self.login)
+        # self.screen = screens.GamingBoard(self.client)
 
     def on_event(self, event):
         if event.type == pygame.QUIT:
@@ -75,6 +76,23 @@ class Brisca:
                 self.screen.available_rooms.update_list(response.get('rooms'))
         elif status == 'join_room':
             self.screen = screens.GamingBoard(self.client)
+            self.screen.player_boards[0].player = self.client.username
+            self.screen.player_boards[0].label.text = self.client.username
+            players_in_room = response.get('players_in_room')
+            if len(players_in_room) > 1:
+                m_idx = -(len(players_in_room) + 1)
+                boards = self.screen.player_boards[:m_idx:-1]
+                for player, board in zip(players_in_room[-2::-1], boards):
+                    board.player = player
+                    board.label.text = player
+        elif status == 'player_entered':
+            new_player = response.get('new_player')
+            if new_player != self.client.username:
+                for board in self.screen.player_boards:
+                    if board.player == '(Empty)':
+                        board.player = new_player
+                        board.label.text = new_player
+                        break
         elif status == 'disconnect':
             socket.close()
             self.running = False

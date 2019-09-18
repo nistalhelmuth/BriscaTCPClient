@@ -21,6 +21,7 @@ class Client:
         self.sel.register(self.sock, self.events, data=self.socket)
         self.username = username
         self.auth = 0  # 0:waiting 1:sent 2:auth -1:failed
+        self.room = None
         self.stop = False
 
     def evaluate_request(self, socket):
@@ -86,6 +87,10 @@ class Client:
         socket.write({"action": "message_to_player", "user": self.username,
                       "to": to, "message": message})
 
+    def card_pick(self, socket, card, room):
+        socket.write(
+            {"action": "card_pick", "user": self.username, "card": card, "room": })
+
     def disconnect(self, socket):
         socket.write({"action": "disconnect", "user": self.username})
 
@@ -108,6 +113,7 @@ class Client:
         elif status == "create_room":
             print("Current rooms:", reponse.get("rooms"))
         elif status == "join_room":
+            self.room = response.get("room")
             print("Current players in ", response.get("room"))
             print(response.get("players_in_room"))
         elif status == "get_players":

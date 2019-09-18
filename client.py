@@ -20,15 +20,14 @@ class Client:
         self.socket = lib.SocketHandler(self.sel, self.sock, self.addr)
         self.sel.register(self.sock, self.events, data=self.socket)
         self.username = username
-        self.auth = 0 #0:waiting 1:sent 2:auth -1:failed
+        self.auth = 0  # 0:waiting 1:sent 2:auth -1:failed
         self.stop = False
 
     def evaluate_request(self, socket):
-        #print("request", self.auth)
-        #input()
+        # print("request", self.auth)
+        # input()
         if self.auth == 0:
-            content = {"action": "login", "user": self.username}
-            socket.write(content)
+            self.login(socket)
             self.auth = 1
         elif self.auth == 2:
             print("TEST MENU")
@@ -49,23 +48,49 @@ class Client:
             elif option == "4":
                 self.get_players(socket)
             elif option == "5":
-                content = {"action": "message_to_room", "user": self.username, "room":"new room", "message": "el mensaje"}
+                self.message_to_room(socket, "new room", "el mensaje")
             elif option == "6":
-                content = {"action": "message_to_player", "user": self.username, "to":'morpheus', "message": "el mensaje"}
+                self.message_to_player(socket, "morpheus", "el mensaje")
             elif option == "7":
-                content = {"action": "disconnect", "user": self.username}
-            socket.write(content)
+                self.disconnect(socket)
 
-                #content = {"action": "create_room", "user": self.username, "room":"new room"}
-        
+            # content = {"action": "create_room", "user": self.username, "room":"new room"}
 
-                #content = {"action": "join_room", "user": self.username, "room":"new room"}
-                #socket.write(content)
-                #self.stop = True
-                #input()
-    
+            # content = {"action": "join_room", "user": self.username, "room":"new room"}
+            # socket.write(content)
+            # self.stop = True
+            # input()
+
+    def login(self, socket):
+        socket.write({"action": "login", "user": self.username})
+
+    def create_room(self, socket, room):
+        socket.write({"action": "create_room",
+                      "user": self.username, "room": room})
+
+    def join_room(self, socket, room):
+        socket.write({"action": "create_room",
+                      "user": self.username, "room": room})
+
+    def get_rooms(self, socket):
+        socket.write({"action": "get_rooms", "user": self.username})
+
+    def get_players(self, socket):
+        socket.write({"action": "get_players", "user": self.username})
+
+    def message_to_room(self, socket, room, message):
+        socket.write({"action": "message_to_room", "user": self.username,
+                      "room": room, "message": message})
+
+    def message_to_player(self, socket, to, message):
+        socket.write({"action": "message_to_player", "user": self.username,
+                      "to": to, "message": message})
+
+    def disconnect(self, socket):
+        socket.write({"action": "disconnect", "user": self.username})
+
     def evaluate_response(self, socket):
-        response = socket.response 
+        response = socket.response
 
         status = response.get("status")
         if status == "error":
@@ -105,7 +130,6 @@ class Client:
             self.auth = -1
             socket.close()
 
-
     def write_handler(self):
         try:
             while True:
@@ -116,11 +140,11 @@ class Client:
                         if mask == selectors.EVENT_WRITE:
                             self.evaluate_request(socket)
                     except Exception:
-                            print(
-                                "main: error: exception for",
-                                f"{socket.addr}:\n{traceback.format_exc()}",
-                            )
-                            socket.close()
+                        print(
+                            "main: error: exception for",
+                            f"{socket.addr}:\n{traceback.format_exc()}",
+                        )
+                        socket.close()
                     # Check for a socket being monitored to continue.
                     if not self.sel.get_map():
                         break
@@ -129,21 +153,25 @@ class Client:
         finally:
             self.sel.close()
 
-    def start(self):
-        write_thread = threading.Thread(target=self.write_handler)
-        write_thread.start()
-        
+    def start(self, gui_listener=None):
+        if gui_listener is None:
+            write_thread = threading.Thread(target=self.write_handler)
+            write_thread.start()
+
         try:
             while True:
                 events = self.sel.select(timeout=1)
-                
+
                 for key, mask in events:
                     socket = key.data
                     try:
                         if mask & selectors.EVENT_READ:
                             socket.read()
                             if socket.response is not None:
-                                self.evaluate_response(socket)
+                                if gui_listener is None:
+                                    self.evaluate_response(socket)
+                                else:
+                                    gui_listener(socket)
                                 socket.response = None
                     except Exception:
                         print(

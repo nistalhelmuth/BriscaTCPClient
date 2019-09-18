@@ -94,6 +94,9 @@ class SocketHandler:
                 self.process_response()
 
     def write(self, content):
+        #self._set_selector_events_mask("w")
+        self._request_queued = False
+        self._send_buffer = b""
         if not self._request_queued:
             self.queue_request(content)
 
@@ -102,7 +105,7 @@ class SocketHandler:
         if self._request_queued:
             if not self._send_buffer:
                 # Set selector to listen for read events, we're done writing.
-                self._set_selector_events_mask("r")
+                self._set_selector_events_mask("rw")
             
     def close(self):
         print("closing connection to", self.addr)
@@ -158,4 +161,6 @@ class SocketHandler:
         self.response = self._json_decode(data)
         print("received response", repr(self.response), "from", self.addr)
         
-        self._set_selector_events_mask("w")
+        self._jsonheader_len = None
+        self.jsonheader = None
+        self._set_selector_events_mask("rw")

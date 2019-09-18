@@ -89,7 +89,7 @@ class Client:
 
     def card_pick(self, socket, card, room):
         socket.write(
-            {"action": "card_pick", "user": self.username, "card": card, "room": })
+            {"action": "card_pick", "user": self.username, "card": card, "room": room})
 
     def disconnect(self, socket):
         socket.write({"action": "disconnect", "user": self.username})

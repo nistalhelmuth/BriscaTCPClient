@@ -17,7 +17,7 @@ class Card(Sprite):
         self.target_pos = None
         print()
 
-    def update(self):
+    def update(self, *args):
         if self.target_pos is None:
             return
 

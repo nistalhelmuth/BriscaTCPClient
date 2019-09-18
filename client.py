@@ -69,7 +69,7 @@ class Client:
                       "user": self.username, "room": room})
 
     def join_room(self, socket, room):
-        socket.write({"action": "create_room",
+        socket.write({"action": "join_room",
                       "user": self.username, "room": room})
 
     def get_rooms(self, socket):

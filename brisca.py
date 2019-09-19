@@ -132,11 +132,11 @@ class Brisca:
             winner = response.get('winner')
             next_card = response.get('next_card')[0]
             self.screen.add_card(
-                next_card + '.png', self.client.username, self.screen.last_picked_index)
-            target_board = list(
-                filter(lambda x: x.player == winner, self.screen.player_boards))[0]
-            for player_board in self.screen.player_boards:
-                player_board.selected_card.target_pos = target_board.winns.rect.center
+                next_card + '.png', self.client.username, self.screen.last_picked_index, self.screen.last_picked_pos)
+            # target_board = list(
+            #     filter(lambda x: x.player == winner, self.screen.player_boards))[0]
+            # for player_board in self.screen.player_boards:
+            #     player_board.selected_card.target_pos = target_board.winns.rect.center
             self.screen.main_board.turn.text = winner
 
         elif status == 'disconnect':

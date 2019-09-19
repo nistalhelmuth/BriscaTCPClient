@@ -114,8 +114,9 @@ class GamingBoard(Screen):
         self.add(self.player_boards)
         self.room = ''
         self.last_picked_index = 0
+        self.last_picked_pos = (0, 0)
 
-    def add_card(self, card, player, position=None):
+    def add_card(self, card, player, position=None, center=None):
         player_board = list(filter(lambda x: x.player ==
                                    player, self.player_boards))[0]
         rotation = None
@@ -124,7 +125,10 @@ class GamingBoard(Screen):
         card = Card(card, rotation)
         card.rect.center = self.main_board.deck.cards[3].rect.center
         if position is not None:
-            card.target_pos = player_board.cards[position].rect.center
+            if center is not None:
+                card.target_pos = center
+            else:
+                card.target_pos = player_board.cards[position].rect.center
             self.player_boards[self.player_boards.index(
                 player_board)].cards[position] = card
         else:
@@ -136,8 +140,9 @@ class GamingBoard(Screen):
         if event.type == MOUSEBUTTONDOWN:
             for index, card in enumerate(self.player_boards[0].cards):
                 if card.rect.collidepoint(event.pos) and self.main_board.turn.text == self.client.username:
-                    card.target_pos = self.player_boards[0].selected_card.rect.center
                     self.last_picked_index = index
+                    self.last_picked_pos = card.rect.center
+                    card.target_pos = self.player_boards[0].selected_card.rect.center
                     self.client.card_pick(
                         self.client.socket, card.name, self.room)
                     return

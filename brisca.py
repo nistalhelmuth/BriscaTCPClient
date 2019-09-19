@@ -138,6 +138,10 @@ class Brisca:
             # for player_board in self.screen.player_boards:
             #     player_board.selected_card.target_pos = target_board.winns.rect.center
             self.screen.main_board.turn.text = winner
+        elif status == 'game_finished':
+            score = 0
+            score = response.get(self.client.username)
+            self.screen = screens.Score(str(score))
 
         elif status == 'disconnect':
             socket.close()

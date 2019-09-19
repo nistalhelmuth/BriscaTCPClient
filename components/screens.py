@@ -44,6 +44,21 @@ class Login(Screen):
         self.buttons.append(btn_login)
 
 
+class Score(Screen):
+    def __init__(self, score):
+        Screen.__init__(self)
+        self.background, _ = load_image('Brisca_Start.png')
+        label = Label('Score:', 52, [0, 0, 0])
+        label.rect.center = (int(1280 * 0.5), int(720 * 0.5))
+        label.rect = label.rect.move(0, -100)
+        self.add(label)
+
+        winner = Label(score, 42, [0, 0, 0])
+        winner.rect.center = (int(1280 * 0.5), int(720 * 0.5))
+        winner.rect = winner.rect.move(0, 50)
+        self.add(winner)
+
+
 class Lobby(Screen):
     def __init__(self, client):
         Screen.__init__(self)
